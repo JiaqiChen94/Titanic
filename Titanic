@@ -1,0 +1,337 @@
+### Have a look at those data
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import pyplot
+import numpy as np
+import seaborn as sns
+import re
+import string
+
+train_df = pd.read_csv("train.csv")
+test_df = pd.read_csv("test.csv")
+
+train_df.head()
+train_df.isnull().sum()
+
+train_df.describe()
+train_df.describe(include = ['O'])
+
+train_df.boxplot(column = ["Fare"], figsize = (12, 8))
+plt.show()
+
+train_df.boxplot(column = ["Age"], figsize = (12, 8))
+plt.show()
+
+train_df.boxplot(column = ['Fare'], by = ['Cabin_Class'], figsize = (12, 8))
+plt.show()
+
+train_df[['Cabin_Class',"Survived"]].groupby(['Cabin_Class'], as_index = False).mean()
+
+### EDA
+f, ax = plt.subplots(1, 2, figsize = (12, 8))
+train_df['Survived'].value_counts().plot.pie(explode = [0, 0.1], autopct = '%1.1f%%', ax = ax[0], shadow = True)
+ax[0].set_title('Survived')
+ax[0].set_ylabel('')
+sns.countplot('Survived', data = train_df, ax = ax[1])
+ax[1].set_title("Survived")
+plt.show()
+
+
+f, ax = plt.subplots(1, 3, figsize = (16, 8))
+sns.distplot(train_df[train_df['Pclass'] == 1].Fare, ax = ax[0])
+ax[0].set_title('Fares in Pclass 1')
+sns.distplot(train_df[train_df['Pclass'] == 2].Fare, ax = ax[1])
+ax[1].set_title("Fares in Pclass 2")
+sns.distplot(train_df[train_df['Pclass'] == 3].Fare, ax = ax[2])
+ax[2].set_title("Fares in Pclass 3")
+
+corr = train_df.corr()
+corr.style.background_gradient(cmap = "coolwarm")
+
+### End of Having a look at those data
+
+
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import pyplot
+import numpy as np
+import seaborn as sns
+import re
+import string
+
+train_data = pd.read_csv("train.csv")
+test_data = pd.read_csv("test.csv")
+
+print(train_data.shape)
+print(test_data.shape)
+
+full_data = [train_data, test_data]
+
+# SibSp and Parch
+for dataset in full_data:
+    dataset['FamilySize'] = dataset['SibSp'] + dataset['Parch'] + 1
+print(train_data[['FamilySize', 'Survived']].groupby(['FamilySize'], as_index = False).mean())
+
+# IsAlone
+for dataset in full_data:
+    dataset['IsAlone'] = 0
+    dataset.loc[dataset['FamilySize'] == 1, 'IsAlone'] = 1
+print(train_data[['IsAlone', 'Survived']].groupby(['IsAlone'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['Embarked'] = dataset['Embarked'].fillna('S')
+print(train_data[['Embarked', 'Survived']].groupby(['Embarked'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['Fare'] = dataset['Fare'].fillna(train_data['Fare'].median())
+train_data['CategoricalFare'] = pd.qcut(train_data['Fare'], 4)
+print(train_data[['CategoricalFare', 'Survived']].groupby(['CategoricalFare'], as_index = False).mean())
+
+for dataset in full_data:
+    age_avg = dataset['Age'].mean()
+    age_std = dataset['Age'].std()
+    age_null_count = dataset['Age'].isnull().sum()
+    
+    age_null_random_list = np.random.randint(age_avg - age_std, age_avg + age_std, size = age_null_count)
+    dataset['Age'][np.isnan(dataset['Age'])] = age_null_random_list
+    dataset['Age'] = dataset['Age'].astype(int)
+train_data['CategoricalAge'] = pd.cut(train_data['Age'], 5)
+print(train_data[['CategoricalAge', 'Survived']].groupby(['CategoricalAge'], as_index = False).mean())
+
+def get_title(name):
+    title_search = re.search(' ([A-Za-z]+)\.', name)
+    if title_search:
+        return title_search.group(1)
+    return ""
+for dataset in full_data:
+    dataset["Title"] = dataset['Name'].apply(get_title)
+print(pd.crosstab(train_data['Title'], train_data['Sex']))
+
+for dataset in full_data:
+    dataset['Title'] = dataset['Title'].replace(['Lady', 'Countess', 'Capt', 'Col',\
+                                                'Don', 'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare')
+    dataset['Title'] = dataset['Title'].replace('Mlle', 'Miss')
+    dataset['Title'] = dataset['Title'].replace('Ms', 'Miss')
+    dataset['Title'] = dataset['Title'].replace('Mme', 'Mrs')
+
+print(train_data[['Title', 'Survived']].groupby(['Title'], as_index = False).mean())
+
+train_data_1 = train_data.copy() # don't change anything any more now
+#train_data_2 = train_data.copy() # change something
+
+# dataset.loc[dataset['FamilySize'] == 1, 'IsAlone'] = 1
+for dataset in full_data:
+    dataset['SexSibSp'] = 0
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 0), 'SexSibSp'] = 1
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 1), 'SexSibSp'] = 2
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 2), 'SexSibSp'] = 3
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 3), 'SexSibSp'] = 4
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 4), 'SexSibSp'] = 5
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 5), 'SexSibSp'] = 6
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['SibSp'] == 8), 'SexSibSp'] = 7
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 0), 'SexSibSp'] = 8
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 1), 'SexSibSp'] = 9
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 2), 'SexSibSp'] = 10
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 3), 'SexSibSp'] = 11
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 4), 'SexSibSp'] = 12
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 5), 'SexSibSp'] = 13
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['SibSp'] == 8), 'SexSibSp'] = 14
+print(train_data[['SexSibSp', 'Survived']].groupby(['SexSibSp'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['SexParch'] = 0
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 0), 'SexParch'] = 1
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 1), 'SexParch'] = 2
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 2), 'SexParch'] = 3
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 3), 'SexParch'] = 4
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 4), 'SexParch'] = 5
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 5), 'SexParch'] = 6
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Parch'] == 6), 'SexParch'] = 7
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 0), 'SexParch'] = 8
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 1), 'SexParch'] = 9
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 2), 'SexParch'] = 10
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 3), 'SexParch'] = 11
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 4), 'SexParch'] = 12
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Parch'] == 5), 'SexParch'] = 13
+print(train_data[['SexParch', 'Survived']].groupby(['SexParch'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['SexPclass'] = 0
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Pclass'] == 1), 'SexPclass'] = 1
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Pclass'] == 2), 'SexPclass'] = 2
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Pclass'] == 3), 'SexPclass'] = 3
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Pclass'] == 1), 'SexPclass'] = 4
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Pclass'] == 2), 'SexPclass'] = 5
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Pclass'] == 3), 'SexPclass'] = 6
+print(train_data[['SexPclass', 'Survived']].groupby(['SexPclass'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['SexIsAlone'] = 0
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['IsAlone'] == 0), 'SexIsAlone'] = 1
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['IsAlone'] == 1), 'SexIsAlone'] = 2
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['IsAlone'] == 0), 'SexIsAlone'] = 3
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['IsAlone'] == 1), 'SexIsAlone'] = 4
+print(train_data[['SexIsAlone', 'Survived']].groupby(['SexIsAlone'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['SexTitle'] = 0
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Title'] == 'Miss'), 'SexTitle'] = 1
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Title'] == 'Mrs'), 'SexTitle'] = 2
+    dataset.loc[(dataset['Sex'] == 'female') & (dataset['Title'] == 'Rare'), 'SexTitle'] = 3
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Title'] == 'Master'), 'SexTitle'] = 4
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Title'] == 'Mr'), 'SexTitle'] = 5
+    dataset.loc[(dataset['Sex'] == 'male') & (dataset['Title'] == 'Rare'), 'SexTitle'] = 6
+print(train_data[['SexTitle', 'Survived']].groupby(['SexTitle'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['PclassTitle'] = 0
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['Title'] == 'Master'), 'PclassTitle'] = 1
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['Title'] == 'Miss'), 'PclassTitle'] = 2
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['Title'] == 'Mr'), 'PclassTitle'] = 3
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['Title'] == 'Mrs'), 'PclassTitle'] = 4
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['Title'] == 'Rare'), 'PclassTitle'] = 5
+    
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['Title'] == 'Master'), 'PclassTitle'] = 6
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['Title'] == 'Miss'), 'PclassTitle'] = 7
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['Title'] == 'Mr'), 'PclassTitle'] = 8
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['Title'] == 'Mrs'), 'PclassTitle'] = 9
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['Title'] == 'Rare'), 'PclassTitle'] = 10
+    
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['Title'] == 'Master'), 'PclassTitle'] = 11
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['Title'] == 'Miss'), 'PclassTitle'] = 12
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['Title'] == 'Mr'), 'PclassTitle'] = 13
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['Title'] == 'Mrs'), 'PclassTitle'] = 14
+print(train_data[['PclassTitle', 'Survived']].groupby(['PclassTitle'], as_index = False).mean())
+
+for dataset in full_data:
+    dataset['PclassIsAlone'] = 0
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['IsAlone'] == 0), 'PclassIsAlone'] = 1
+    dataset.loc[(dataset['Pclass'] == 1) & (dataset['IsAlone'] == 1), 'PclassIsAlone'] = 2
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['IsAlone'] == 0), 'PclassIsAlone'] = 3
+    dataset.loc[(dataset['Pclass'] == 2) & (dataset['IsAlone'] == 1), 'PclassIsAlone'] = 4
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['IsAlone'] == 0), 'PclassIsAlone'] = 5
+    dataset.loc[(dataset['Pclass'] == 3) & (dataset['IsAlone'] == 1), 'PclassIsAlone'] = 6
+print(train_data[['PclassIsAlone', 'Survived']].groupby(['PclassIsAlone'], as_index = False).mean())
+
+train_data['Has_Cabin'] = train_data['Cabin'].apply(lambda x : 0 if type(x) == float else 1)
+test_data['Has_Cabin'] = test_data['Cabin'].apply(lambda x : 0 if type(x) == float else 1)
+
+for dataset in full_data:
+    # Sex
+    dataset['Sex'] = dataset['Sex'].map( {'female' : 0, 'male' : 1}).astype(int)
+    
+    # Fare
+    dataset.loc[dataset['Fare'] <= 7.91, 'Fare'] = 0
+    dataset.loc[(dataset['Fare'] > 7.91  ) & (dataset['Fare'] <= 14.454), 'Fare'] = 1
+    dataset.loc[(dataset['Fare'] > 14.454) & (dataset['Fare'] <= 31), 'Fare'] = 2
+    dataset.loc[(dataset['Fare'] > 31) , 'Fare'] = 3
+    dataset['Fare'] = dataset['Fare'].astype(int)
+    
+    # Age
+    dataset.loc[dataset['Age'] <= 16, 'Age'] = 0
+    dataset.loc[(dataset['Age'] > 16) & (dataset['Age'] <= 32), 'Age'] = 1
+    dataset.loc[(dataset['Age'] > 32) & (dataset['Age'] <= 48), 'Age'] = 2
+    dataset.loc[(dataset['Age'] > 48) & (dataset['Age'] <= 64), 'Age'] = 3
+    dataset.loc[(dataset['Age'] > 64), 'Age'] = 4
+    
+    # Embared
+    dataset['Embarked'] = dataset['Embarked'].map( {"S" : 0, 'C' : 1, 'Q' : 2}).astype(int)
+    
+    # Title
+    dataset['Title'] = dataset['Title'].map( {'Mr' : 1, 'Mrs' : 2, 'Miss' : 3, 'Master' : 4, 'Rare' : 5})
+    
+    
+train_data.columns
+
+# 'CategoricalFare', 'CategoricalAge' 
+drop_elements = ['PassengerId', 'Name', 'Ticket', 'Cabin']
+
+train = train_data.drop(drop_elements, axis = 1)
+train = train.drop(['CategoricalFare', 'CategoricalAge'], axis = 1)
+
+test = test_data.drop(drop_elements, axis = 1)
+
+print(train.shape)
+print(test.shape)
+
+
+### Model
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.metrics import accuracy_score, log_loss
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.linear_model import LogisticRegression
+
+
+classifiers = [
+    KNeighborsClassifier(3),
+    SVC(probability = True),
+    DecisionTreeClassifier(),
+    RandomForestClassifier(),
+    AdaBoostClassifier(),
+    GradientBoostingClassifier(),
+    GaussianNB(),
+    LinearDiscriminantAnalysis(),
+    QuadraticDiscriminantAnalysis(),
+    LogisticRegression()
+]
+log_cols = ['Classifier', 'Accuracy']
+log = pd.DataFrame(columns = log_cols)
+
+sss = StratifiedShuffleSplit(n_splits = 10, test_size = 0.1, random_state = 0)
+
+X = train[0::, 1::]
+y = train[0::, 0]
+
+acc_dict = {}
+
+for train_index, test_index in sss.split(X, y):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+    
+    for clf in classifiers:
+        name = clf.__class__.__name__
+        clf.fit(X_train, y_train)
+        train_predictions = clf.predict(X_test)
+        acc = accuracy_score(y_test, train_predictions)
+        if name in acc_dict:
+            acc_dict[name] += acc
+        else:
+            acc_dict[name] = acc
+            
+for clf in acc_dict:
+    acc_dict[clf] = acc_dict[clf] / 10.0
+    log_entry = pd.DataFrame([[clf, acc_dict[clf]]], columns = log_cols)
+    log = log.append(log_entry)
+    
+plt.xlabel('Accuracy')
+plt.title('Classifier Accuracy')
+
+sns.set_color_codes('muted')
+sns.barplot(x = 'Accuracy', y = 'Classifier', data = log, color = 'b')
+
+candidate_classifier = SVC()
+candidate_classifier.fit(train[0::, 1::], train[0::, 0])
+result = candidate_classifier.predict(test)
+
+test_passengerid = test_data['PassengerId']
+test_passengerid_list = []
+for i in test_passengerid:
+    test_passengerid_list.append(i)
+    
+result_list = []
+for i in result:
+    result_list.append(i)
+    
+zippedList = list(zip(test_passengerid_list, result_list))
+dfobf = pd.DataFrame(zippedList, columns = ['PassengerId', 'Survived'])
+dfobf.to_csv("result_12_3.csv", index = False)
